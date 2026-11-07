@@ -1,0 +1,12 @@
+{
+  "name": "smart-crm-backend",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsup src/api.ts src/inbound-webhook.ts src/worker.ts --format esm --target node20 --clean",
+    "start:api": "node dist/api.js",
+    "start:inbound": "node dist/inbound-webhook.js",
+    "start:worker": "node dist/worker.js",
+    "dev:api": "tsx watch src/api.ts"
+  }
+}

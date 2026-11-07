@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Smart CRM</title>
+<!-- Serve from the same origin as the API, or set window.CRM_API before this script. Replace login() with your auth provider. -->
+<style>
+:root{--bg:#0e1116;--card:#171b22;--line:#262c36;--tx:#e8ebf0;--mu:#8b94a3;--ac:#6c8cff;--ok:#34c38f;--dg:#ef5b5b;color-scheme:dark}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+.w{max-width:1040px;margin:0 auto;padding:20px 16px 60px}
+header{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin-bottom:18px}
+h1{font-size:20px;margin:0}h2{font-size:16px;margin:0 0 14px}h3{font-size:14px;margin:18px 0 6px}
+button,select,input,textarea{font:inherit;color:var(--tx);background:#0f1319;border:1px solid var(--line);border-radius:8px;padding:9px 12px}
+button{cursor:pointer;background:var(--card)}button:hover{border-color:var(--ac)}button:disabled{opacity:.5;cursor:wait}
+button.p,button.on{background:var(--ac);border-color:var(--ac);color:#fff}button.d{color:var(--dg)}
+.c{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:20px;margin-bottom:18px}
+label{display:block;font-size:12px;color:var(--mu);margin:12px 0 4px}input,select,textarea{width:100%}textarea{min-height:90px;resize:vertical}
+.g{display:grid;grid-template-columns:1fr 1fr;gap:0 16px}@media(max-width:600px){.g{grid-template-columns:1fr}}
+.bar{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap}.bar input{flex:1;min-width:160px}.bar select{width:auto}
+.tw{overflow-x:auto}table{width:100%;border-collapse:collapse;min-width:640px}
+th,td{text-align:left;padding:10px 8px;border-bottom:1px solid var(--line);font-size:14px}th{color:var(--mu);font-weight:500;font-size:12px}
+td button{padding:5px 9px;font-size:12px;margin-right:4px}
+.b{display:inline-block;padding:2px 10px;border-radius:99px;font-size:12px;background:#222a38}
+.r{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.m{color:var(--mu);font-size:13px}.hide{display:none}
+.log{border-left:2px solid var(--line);padding:4px 12px;margin:8px 0;font-size:14px;white-space:pre-wrap}
+.sg{border:1px solid var(--ac);border-radius:10px;padding:10px 12px;margin:8px 0}
+.t{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--ok);color:#06210f;padding:8px 16px;border-radius:99px;z-index:9;max-width:90%}
+.t.e{background:var(--dg);color:#fff}
+</style></head><body><div class="w" id="app">
+<header><h1>Smart CRM</h1><div class="bar" style="margin:0"><select id="pp"></select><button id="np">+ New profile</button></div></header>
+<nav class="r" id="nav" style="margin:0 0 18px"></nav>
+
+<section id="v-login" class="hide"><div class="c"><h2>Sign in</h2>
+<p class="m">Dev sign-in: paste an access token. In production, replace this with your auth provider’s login.</p>
+<label>Access token</label><input id="tok" type="password"><div class="r"><button class="p" id="tokgo">Continue</button></div></div></section>
+
+<section id="v-profile" class="hide"><div class="c"><h2 id="p-title">Business Profile</h2>
+<label>Business Name</label><input id="p-name"><label>Short Description (what you do)</label><textarea id="p-desc"></textarea>
+<label>Services you offer</label><textarea id="p-serv"></textarea><label>Portfolio / Website Link</label><input id="p-link" type="url" placeholder="https://">
+<label>Tone notes (optional)</label><input id="p-tone" placeholder="e.g. warm, direct, no jargon">
+<div class="r"><button class="p" id="p-save">Save Profile</button></div></div>
+<div class="c hide" id="gm"><h2>Gmail connection</h2><p id="gm-s" class="m"></p><div class="r"><button class="p" id="gm-c">Connect Gmail</button><button class="d hide" id="gm-d">Disconnect</button></div><p class="m">Emails are sent from this account. We ask for send-only access, so we can’t read your inbox.</p></div>
+<div class="c hide" id="dz" style="border-color:var(--dg)"><h2>Delete account</h2><p class="m">Permanently deletes your workspace, profiles, leads, emails and history, and disconnects Gmail. Use Export Backup on the Leads screen first. This can’t be undone.</p><label id="dz-l"></label><input id="dz-i" autocomplete="off"><div class="r"><button class="d" id="dz-b">Delete everything</button></div></div></section>
+
+<section id="v-add" class="hide"><div class="c"><h2 id="l-title">Add Lead</h2><div class="g">
+<div><label>Full Name *</label><input id="l-name"></div><div><label>Email Address *</label><input id="l-email" type="email"></div>
+<div><label>Phone Number</label><input id="l-phone"></div><div><label>Company Name (optional)</label><input id="l-co"></div></div>
+<label>Interest / Notes</label><textarea id="l-notes"></textarea><label>Status</label><select id="l-status"></select>
+<div class="r"><button class="p" id="l-save">Save Lead</button><button id="l-cancel" class="hide">Cancel edit</button></div></div></section>
+
+<section id="v-tasks" class="hide"><div class="c"><h2>Follow-up Tasks</h2><div id="tasks"></div></div></section>
+
+<section id="v-leads" class="hide"><div class="c"><h2>Leads <span class="m" id="cnt"></span></h2>
+<div class="bar"><input id="q" placeholder="Search name, email, company…"><select id="f"></select></div>
+<div class="tw"><table><thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Status</th><th>Date Added</th><th>Actions</th></tr></thead><tbody id="rows"></tbody></table></div>
+<p class="m" id="empty"></p><div class="r"><button id="exp">Export Backup</button></div></div>
+<div class="c hide" id="detail"></div></section>
+</div><div class="t hide" id="toast"></div>
+<script>
+var ST=[["new","New"],["contacted","Contacted"],["interested","Interested"],["proposal_sent","Proposal Sent"],["closed","Closed"]],
+LBL=Object.fromEntries(ST),API=(window.CRM_API||"/api").replace(/\/$/,""),TOK="";
+try{TOK=sessionStorage.getItem("crm_tok")||""}catch(e){}
+var $=function(i){return document.getElementById(i)},S={profiles:[],pid:null,creating:false,view:"leads",sel:null,editId:null,leads:[],total:0,tasks:[],sug:null};
+function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+function toast(m,e){var t=$("toast");t.textContent=m;t.className="t"+(e?" e":"");setTimeout(function(){t.classList.add("hide")},2600)}
+async function api(m,p,b){var r=await fetch(API+p,{method:m,headers:Object.assign({Authorization:"Bearer "+TOK},b?{"Content-Type":"application/json"}:{}),body:b?JSON.stringify(b):undefined});
+if(r.status==401||r.status==403){S.view="login";nav();throw new Error("Please sign in")}
+if(r.status==204)return null;var j=await r.json().catch(function(){return{}});if(!r.ok)throw new Error(j.error||"Request failed ("+r.status+")");return j}
+function run(fn){return async function(){try{await fn.apply(this,arguments)}catch(e){toast(e.message,1)}}}
+function opts(v){return ST.map(function(s){return'<option value="'+s[0]+'"'+(s[0]==v?" selected":"")+'>'+s[1]+'</option>'}).join("")}
+$("l-status").innerHTML=opts("new");$("f").innerHTML='<option value="">All statuses</option>'+opts("");
+var TABS=[["leads","Leads"],["tasks","Tasks"],["add","Add Lead"],["profile","Business Profile"]];
+function nav(){$("nav").innerHTML=S.view=="login"?"":TABS.map(function(x){return'<button data-v="'+x[0]+'" class="'+(S.view==x[0]?"on":"")+'">'+x[1]+'</button>'}).join("");
+["login","profile","add","tasks","leads"].forEach(function(v){$("v-"+v).classList.toggle("hide",v!=S.view)})}
+$("nav").onclick=run(async function(e){var v=e.target.dataset.v;if(!v)return;S.view=v;if(v=="add"&&!S.editId)resetForm();if(v=="profile")fillProf();nav();if(v=="tasks")await loadTasks();if(v=="leads")await loadLeads()});
+$("tokgo").onclick=run(async function(){TOK=$("tok").value.trim();try{sessionStorage.setItem("crm_tok",TOK)}catch(e){}await init()});
+function prof(){return S.profiles.find(function(p){return p.id==S.pid})}
+function profSel(){$("pp").innerHTML=S.profiles.map(function(p){return'<option value="'+p.id+'"'+(p.id==S.pid?" selected":"")+'>'+esc(p.name)+'</option>'}).join("")||"<option>No profiles</option>"}
+$("pp").onchange=run(async function(){S.pid=this.value;S.sel=null;fillProf();await loadLeads()});
+$("np").onclick=function(){S.creating=true;S.view="profile";fillProf();nav()};
+function fillProf(){var p=S.creating?{}:prof()||{};$("p-title").textContent=S.creating?"New Business Profile":"Business Profile";
+$("p-name").value=p.name||"";$("p-desc").value=p.description||"";$("p-serv").value=p.services||"";$("p-link").value=p.website_url||"";$("p-tone").value=p.tone_notes||"";run(loadGm)();run(loadAcct)()}
+$("p-save").onclick=run(async function(){var b={name:$("p-name").value.trim(),description:$("p-desc").value.trim(),services:$("p-serv").value.trim(),website_url:$("p-link").value.trim(),tone_notes:$("p-tone").value.trim()};
+if(!b.name)return toast("Business name is required",1);var r;
+if(S.creating){r=await api("POST","/profiles",b);S.profiles.push(r);S.pid=r.id;S.creating=false}
+else{r=await api("PATCH","/profiles/"+S.pid,b);S.profiles[S.profiles.findIndex(function(p){return p.id==S.pid})]=r}
+profSel();toast("Profile saved")});
+function resetForm(){S.editId=null;["name","email","phone","co","notes"].forEach(function(k){$("l-"+k).value=""});$("l-status").value="new";$("l-title").textContent="Add Lead";$("l-cancel").classList.add("hide")}
+$("l-cancel").onclick=function(){resetForm();S.view="leads";nav()};
+$("l-save").onclick=run(async function(){var n=$("l-name").value.trim(),e=$("l-email").value.trim();
+if(!n||!/^\S+@\S+\.\S+$/.test(e))return toast("Name and a valid email are required",1);
+var b={full_name:n,email:e,phone:$("l-phone").value.trim()||undefined,company:$("l-co").value.trim()||undefined,notes:$("l-notes").value.trim()||undefined,stage:$("l-status").value};
+if(S.editId)await api("PATCH","/leads/"+S.editId,b);else{if(!S.pid)return toast("Create a business profile first",1);b.business_profile_id=S.pid;await api("POST","/leads",b)}
+resetForm();S.view="leads";nav();toast("Lead saved");await loadLeads()});
+var qt;$("q").oninput=function(){clearTimeout(qt);qt=setTimeout(run(loadLeads),250)};$("f").onchange=run(loadLeads);
+async function loadLeads(){if(!S.pid)return;var p="?profile_id="+S.pid+"&limit=100"+($("f").value?"&stage="+$("f").value:"")+($("q").value.trim()?"&q="+encodeURIComponent($("q").value.trim()):"");
+var r=await api("GET","/leads"+p);S.leads=r.items;S.total=r.total;rows()}
+function rows(){$("cnt").textContent="("+S.total+")";$("rows").innerHTML=S.leads.map(function(l){return'<tr data-id="'+l.id+'"><td>'+esc(l.full_name)+'</td><td>'+esc(l.email)+'</td><td>'+esc(l.phone)+'</td><td><span class="b">'+LBL[l.stage]+'</span></td><td>'+new Date(l.created_at).toLocaleDateString()+'</td><td><button data-a="v">View Details</button><button data-a="e">Edit</button><button data-a="d" class="d">Delete</button></td></tr>'}).join("");
+$("empty").textContent=S.leads.length?"":"No leads found."}
+$("rows").onclick=run(async function(e){var a=e.target.dataset.a,tr=e.target.closest("tr");if(!a||!tr)return;var id=tr.dataset.id;
+if(a=="v")return openLead(id,true);
+if(a=="d"){if(!confirm("Delete this lead and its history?"))return;await api("DELETE","/leads/"+id);if(S.sel==id){S.sel=null;$("detail").classList.add("hide")}await loadLeads();return}
+var l=await api("GET","/leads/"+id);S.editId=id;$("l-name").value=l.full_name;$("l-email").value=l.email;$("l-phone").value=l.phone||"";$("l-co").value=l.company||"";$("l-notes").value=l.notes||"";$("l-status").value=l.stage;$("l-title").textContent="Edit Lead";$("l-cancel").classList.remove("hide");S.view="add";nav()});
+async function openLead(id,scroll){S.sel=id;S.sug=null;var l=await api("GET","/leads/"+id);detail(l);if(scroll)$("detail").scrollIntoView({behavior:"smooth"})}
+function detail(l){var el=$("detail");el.classList.remove("hide");
+el.innerHTML='<h2>'+esc(l.full_name)+'</h2><p class="m">'+esc(l.email)+(l.phone?" · "+esc(l.phone):"")+(l.company?" · "+esc(l.company):"")+(l.unsubscribed?" · <b>Unsubscribed</b>":"")+(l.bounced?" · <b>Bounced</b>":"")+'</p><p>'+(esc(l.notes)||'<span class="m">No notes</span>')+'</p>'
++'<label>Status</label><div class="r" style="margin-top:0" id="qs">'+ST.map(function(s){return'<button data-s="'+s[0]+'" class="'+(l.stage==s[0]?"on":"")+'">'+s[1]+'</button>'}).join("")+'</div>'
++(l.suggestions.length?'<h3>AI suggestions</h3>'+l.suggestions.map(function(s){return s.kind=="stage_change"
+?'<div class="sg">Move to <b>'+esc(LBL[s.content]||s.content)+'</b><div class="r"><button class="p" data-a="acc" data-id="'+s.id+'">Accept</button><button data-a="rej" data-id="'+s.id+'">Dismiss</button></div></div>'
+:'<div class="sg"><span class="m">'+(s.kind=="draft_reply"?"Suggested reply":"Suggested email")+'</span><div class="log">'+esc(s.content.slice(0,260))+(s.content.length>260?"…":"")+'</div><div class="r"><button class="p" data-a="use" data-id="'+s.id+'">Review &amp; send</button><button data-a="rej" data-id="'+s.id+'">Dismiss</button></div></div>'}).join(""):"")
++(l.open_tasks.length?'<h3>Open tasks</h3>'+l.open_tasks.map(function(t){return'<div class="r" style="align-items:center"><span>'+esc(t.title)+' <span class="m">due '+new Date(t.due_at).toLocaleString()+'</span></span><button data-a="done" data-id="'+t.id+'">Done</button></div>'}).join(""):"")
++'<div class="r"><button class="p" data-a="gen">Generate Email with AI</button></div>'
++'<div id="em" class="hide"><label>Email (editable)</label><textarea id="eb" style="min-height:220px" readonly></textarea><div class="r"><button data-a="edit">Edit Email</button><button class="p" data-a="send">Approve &amp; Send</button></div></div>'
++'<h3>Timeline</h3>'+(l.timeline.map(function(x){var k={email_out:"Sent",email_in:"Reply",note:"Note",stage_change:"Status",call:"Call"}[x.kind]||x.kind;
+return'<div class="log"><span class="m">'+k+(x.classification?" · "+esc(x.classification):"")+" · "+new Date(x.occurred_at).toLocaleString()+'</span>\n'+esc((x.subject?x.subject+"\n":"")+(x.body||""))+'</div>'}).join("")||'<p class="m">No activity yet.</p>');
+$("qs").onclick=run(async function(e){var s=e.target.dataset.s;if(!s)return;await api("PATCH","/leads/"+l.id,{stage:s});await loadLeads();await openLead(l.id)});
+el.onclick=run(async function(e){var a=e.target.dataset.a,id=e.target.dataset.id;if(!a)return;var b=e.target;
+if(a=="acc"){await api("POST","/suggestions/"+id+"/accept");await loadLeads();await openLead(l.id)}
+else if(a=="rej"){await api("POST","/suggestions/"+id+"/reject");await openLead(l.id)}
+else if(a=="done"){await api("PATCH","/tasks/"+id,{done:true});await openLead(l.id)}
+else if(a=="use"){var s=l.suggestions.find(function(x){return x.id==id});S.sug=id;$("em").classList.remove("hide");$("eb").value=s.content;$("eb").readOnly=true}
+else if(a=="gen"){b.disabled=true;b.textContent="Generating…";try{var r=await api("POST","/leads/"+l.id+"/draft");S.sug=r.id;$("em").classList.remove("hide");$("eb").value=r.content;$("eb").readOnly=true}finally{b.disabled=false;b.textContent="Generate Email with AI"}}
+else if(a=="edit"){$("eb").readOnly=false;$("eb").focus()}
+else if(a=="send"){if(!S.sug)return;var t=$("eb").value,m=t.match(/^Subject:\s*(.*)\r?\n+/i);b.disabled=true;
+try{await api("POST","/leads/"+l.id+"/send",{suggestion_id:S.sug,subject:m?m[1]:"Hello",body:m?t.slice(m[0].length):t});toast("Email sent");S.sug=null;await loadLeads();await openLead(l.id)}finally{b.disabled=false}}})}
+async function loadTasks(){var t=await api("GET","/tasks");$("tasks").innerHTML=t.length?t.map(function(x){return'<div class="r" style="align-items:center;border-bottom:1px solid var(--line);padding-bottom:10px"><div style="flex:1"><b>'+esc(x.title)+'</b><div class="m">'+esc(x.full_name)+" · due "+new Date(x.due_at).toLocaleString()+'</div></div><button data-l="'+x.lead_id+'">Open lead</button><button data-t="'+x.id+'">Done</button></div>'}).join(""):'<p class="m">Nothing due. Quiet leads will appear here automatically.</p>'}
+$("tasks").onclick=run(async function(e){if(e.target.dataset.t){await api("PATCH","/tasks/"+e.target.dataset.t,{done:true});await loadTasks()}else if(e.target.dataset.l){S.view="leads";nav();await loadLeads();await openLead(e.target.dataset.l,true)}});
+$("exp").onclick=run(async function(){var r=await fetch(API+"/export",{headers:{Authorization:"Bearer "+TOK}});if(!r.ok)throw new Error("Export failed");
+var a=document.createElement("a");a.href=URL.createObjectURL(await r.blob());a.download="crm-backup-"+new Date().toISOString().slice(0,10)+".json";a.click()});
+async function loadAcct(){var a=await api("GET","/account");S.acct=a;var z=$("dz");z.classList.toggle("hide",a.role!="owner");$("dz-l").textContent="Type “"+a.workspace_name+"” to confirm";$("dz-i").value=""}
+$("dz-b").onclick=run(async function(){var t=$("dz-i").value;if(!t.trim())return toast("Type the workspace name to confirm",1);
+if(!confirm("Permanently delete everything? This can’t be undone."))return;
+await api("POST","/account/delete",{confirmation:t});TOK="";try{sessionStorage.removeItem("crm_tok")}catch(e){}
+S.profiles=[];S.pid=null;S.view="login";nav();toast("Account deleted. All data was removed.")});
+async function loadGm(){var g=$("gm");if(S.creating||!S.pid){g.classList.add("hide");return}g.classList.remove("hide");
+var r=await api("GET","/profiles/"+S.pid+"/gmail");
+$("gm-s").innerHTML=r.connected?(r.status=="active"?"Connected as <b>"+esc(r.address)+"</b>":"<b>"+esc(r.address)+"</b> needs to be reconnected"):"Not connected. Connect an inbox to send emails.";
+$("gm-c").textContent=r.connected?"Reconnect":"Connect Gmail";$("gm-d").classList.toggle("hide",!r.connected)}
+$("gm-c").onclick=run(async function(){var r=await api("POST","/profiles/"+S.pid+"/gmail/connect");location.href=r.url});
+$("gm-d").onclick=run(async function(){if(!confirm("Disconnect this Gmail account?"))return;await api("DELETE","/profiles/"+S.pid+"/gmail");await loadGm();toast("Disconnected")});
+var GMQ=new URLSearchParams(location.search),GM=GMQ.get("gmail");
+if(GM){history.replaceState(null,"",location.pathname);var GMSG={missing_scope:"Please allow the send-email permission and try again",no_refresh_token:"Google didn’t grant offline access. Remove this app at myaccount.google.com/permissions and retry",access_denied:"Connection cancelled",invalid_state:"The connection attempt expired. Please try again"};
+setTimeout(function(){toast(GM=="connected"?"Gmail connected":(GMSG[GMQ.get("reason")]||"Couldn’t connect Gmail"),GM!="connected")},400)}
+async function init(){S.profiles=await api("GET","/profiles");S.pid=(S.profiles[0]||{}).id||null;profSel();
+if(!S.pid){S.creating=true;S.view="profile";fillProf();nav();return}S.view=GM?"profile":"leads";nav();if(GM)fillProf();await loadLeads()}
+if(TOK)run(init)();else{S.view="login";nav()}
+</script></body></html>
